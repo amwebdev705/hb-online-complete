@@ -3,7 +3,7 @@
 export default function Home() {
   return (
   <>
-<h1 className="text-3xl font-bold underline text-center">HomePage</h1>
+<h1 className="text-3xl font-bold underline text-center">Home Another Page</h1>
 
 
   </>
