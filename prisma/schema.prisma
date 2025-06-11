@@ -1,0 +1,320 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(cuid()) @map("_id")
+  name             String
+  stripeCustomerId String?
+  email            String    @unique
+  emailVerified    Boolean
+  image            String?
+  premium          Boolean   @default(false)
+  role             String    @default("user")
+  banned           Boolean?
+  banReason        String?
+  banExpires       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime? @updatedAt
+  orders           Order[]
+  reviews          Review[]
+  sessions         Session[]
+  accounts         Account[]
+}
+
+model Session {
+  id             String    @id @default(cuid()) @map("_id")
+  userId         String
+  token          String
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  impersonatedBy String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime? @updatedAt
+  User           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  accountId             String?
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  userId                String?
+  id                    String    @id @default(cuid()) @map("_id")
+  user                  User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid()) @map("_id")
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Brand {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  image       String?
+  isPublished Boolean   @default(false)
+  bgColor     String?
+  textColor   String?
+  font        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+  products    Product[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  image       String?
+  isPublished Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+  products    Product[]
+}
+
+model Product {
+  id                 String           @id @default(cuid())
+  name               String
+  slug               String           @unique
+  sku                String?
+  description        String?
+  price              Float
+  listPrice          Float
+  countInStock       Int?
+  color              String?
+  size               String?
+  numReviews         Int              @default(0)
+  numSales           Int              @default(0)
+  isPublished        Boolean          @default(false)
+  isFavorite         Boolean          @default(false)
+  video              String?
+  images             String[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  categoryId         String?
+  brandId            String
+  ratingDistribution Json?
+  tags               String[]
+  avgRating          Float?
+  reviews            Json?
+  OrderItem          OrderItem[]
+  brand              Brand            @relation(fields: [brandId], references: [id])
+  category           Category?        @relation(fields: [categoryId], references: [id])
+  variants           ProductVariant[]
+  Review             Review[]
+}
+
+model ProductVariant {
+  id           String    @id @default(cuid())
+  productId    String
+  size         String?
+  color        String?
+  price        Float
+  listPrice    Float
+  images       String[]
+  sku          String?
+  video        String?
+  countInStock Int?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime? @updatedAt
+  product      Product   @relation(fields: [productId], references: [id])
+}
+
+model Review {
+  id                 String   @id @default(cuid())
+  rating             Int
+  title              String
+  comment            String
+  isVerifiedPurchase Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  productId          String
+  userId             String
+  product            Product  @relation(fields: [productId], references: [id])
+  user               User     @relation(fields: [userId], references: [id])
+}
+
+model Order {
+  id               String        @id @default(cuid())
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  userId           String?
+  itemsPrice       Float
+  shippingPrice    Int?
+  taxPrice         Float
+  totalPrice       Float
+  isPaid           Boolean       @default(false)
+  paidAt           DateTime?
+  isDelivered      Boolean       @default(false)
+  deliveredAt      DateTime?
+  carrier          String?
+  eta              DateTime?
+  shippingCost     Float?
+  paymentResult    Json?
+  paymentMethod    PaymentMethod @default(Stripe)
+  paymentIntentId  String?       @unique
+  stripeSessionId  String?       @unique
+  stripeCustomerId String?
+  totalAmount      Float?
+  address          Json?
+  currency         String        @default("usd")
+  email            String?
+  labelCreatedAt   DateTime?
+  labelUrl         String?
+  rate             Json?
+  rateDetails      Json?
+  serviceLevel     String?
+  shippedAt        DateTime?
+
+  shippingAddress    ShippingAddress? @relation("OrderToShippingAddress")
+  shippingAddressId  String?
+  shippingCarrier    String?
+  shippingCity       String?
+  shippingCountry    String?
+  shippingLabelUrl   String?
+  shippingName       String?
+  shippingRateAmount Float?
+  shippingRateId     String?
+  shippingService    String?
+  shippingState      String?
+  shippingStreet     String?
+  shippingZip        String?
+  shippoRateId       String?
+  shippoRatedId      String?
+  shippoShipmentId   String?
+  status             String           @default("pending")
+  trackingCarrier    String?
+  trackingNumber     String?
+  trackingStatus     String?
+  trackingUrl        String?
+
+  user  User?       @relation(fields: [userId], references: [id])
+  items OrderItem[]
+}
+
+model ShippingAddress {
+  id         String   @id @default(uuid())
+  orderId    String   @unique
+  fullName   String
+  address    String
+  city       String
+  postalCode String
+  country    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  phone      String?
+  state      String
+
+  order Order @relation("OrderToShippingAddress", fields: [orderId], references: [id])
+}
+
+model OrderItem {
+  id           String   @id @default(uuid())
+  orderId      String
+  productId    String?
+  clientId     String?
+  name         String
+  slug         String?
+  image        String?
+  category     String?
+  brand        String?
+  price        Float
+  total        Float
+  countInStock Int?
+  quantity     Int
+  size         String?
+  color        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product      Product? @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Setting {
+  id                   String   @id @default("singleton")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  pageSize             Int      @default(9)
+  isMaintenanceMode    Boolean  @default(false)
+  freeShippingMinPrice Float    @default(0)
+  defaultTheme         String   @default("light")
+  defaultColor         String   @default("gold")
+  siteLogo             String   @default("/logo.png")
+  siteDescription      String?
+  siteEmail            String?
+  siteName             String?
+  carousels            Json?
+  currencyAvailable    String[] @default([])
+  currencyDefault      String   @default("USD")
+  languageAvailable    String[] @default([])
+  languageDefault      String   @default("en")
+  socialLinks          Json?
+  theme                String   @default("system")
+  siteSlogan           String?
+  siteUrl              String?
+}
+
+model WebPage {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum PaymentMethod {
+  Stripe
+}
+
+enum OrderStatus {
+  pending
+  paid
+  shipped
+  delivered
+  cancelled
+}
+
+model ShippingWebhookLog {
+  id        String   @id @default(cuid())
+  eventId   String   @unique
+  eventType String
+  payload   Json
+  createdAt DateTime @default(now())
+}
