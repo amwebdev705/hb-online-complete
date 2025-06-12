@@ -1,11 +1,12 @@
-
+'use client'
 
 export default function Home() {
+  const url = 'https://example.com'
+
   return (
-  <>
-<h1 className="text-3xl font-bold underline text-center">Home Page</h1>
-
-
-  </>
-  );
+    <div className="p-4">
+      <p>HOme Page</p>
+      <a href={url}>{url}</a>
+    </div>
+  )
 }
